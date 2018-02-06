@@ -1,0 +1,22 @@
+version: '3'
+services:
+  get_stock:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./data:/data
+      - ./main.py:/main.py
+    environment:
+      SAVE_PATH: /data
+      TIME_TYPE: '1'
+      TOR_PASSWORD: 'tor'
+    deploy:
+      restart_policy:
+        delay: 10s
+        condition: on-failure
+    command: python -u ./main.py
+  tor_proxy:
+    image: dperson/torproxy
+    environment:
+      PASSWORD: "tor"
