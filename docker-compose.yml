@@ -11,11 +11,19 @@ services:
       SAVE_PATH: /data
       TIME_TYPE: '1'
       TOR_PASSWORD: 'tor'
+      USE_TOR: 'True'
+      TOR_REFRESH_TIME: 3
     deploy:
       restart_policy:
         delay: 10s
         condition: on-failure
-    command: python -u ./main.py
+    entrypoint:
+      - dockerize
+      - -timeout
+      - 60s
+      - -wait
+      - tcp://tor_proxy:9051
+    command: python -B -u ./main.py
   tor_proxy:
     image: dperson/torproxy
     environment:
