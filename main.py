@@ -50,12 +50,12 @@ def price_to_csvl(price):
 
 SAVE_PATH = os.environ["SAVE_PATH"]
 USE_TOR = os.environ["USE_TOR"]
+if USE_TOR in ['True', 'true']:
+    USE_TOR = True
 
-type(USE_TOR)
+if USE_TOR is True:
+    TOR_REFRESH_TIME = int(os.environ["TOR_REFRESH_TIME"])
 
-if USE_TOR == True:
-    TOR_REFRESH_TIME = os.environ["TOR_REFRESH_TIME"]
-    type(TOR_REFRESH_TIME)
 args = {"skip": 0, }
 codes = []
 for (i, (code, name, _)) in enumerate(all_brands[args["skip"]:]):
@@ -71,7 +71,7 @@ def init_tor_proxy():
     return torip, controller
 
 
-if USE_TOR == True:
+if USE_TOR is True:
     torip, controller = init_tor_proxy()
     controller.authenticate(password=os.environ["TOR_PASSWORD"])
     controller.signal(Signal.NEWNYM)
@@ -87,11 +87,6 @@ if _type == '1':
     for (i, (code, name, _)) in enumerate(all_brands[args["skip"]:]):
         print('{} / {}'.format(i + 1, len(all_brands)), code, name,)
         file = os.path.join(SAVE_PATH, 'YH_JP_{}.csv'.format(code))
-        # change ip address if tor refresh time has come
-        if USE_TOR == True:
-            if tor_used_time > TOR_REFRESH_TIME:
-                controller.signal(Signal.NEWNYM)
-                tor_used_time = 0
         # すでにデータを取得している場合
         if os.path.isfile(file):
             stockdf = pd.read_csv(file)
@@ -113,6 +108,12 @@ if _type == '1':
                         # 開始日付と終了日が異なる場合=>関数の実行
                         # 関数実行時、開始日付はDB上に保存されている日付の次の日からにする
                         start_date = start_date + datetime.timedelta(days=1)
+                        # change ip address if tor refresh time has come
+                        if USE_TOR == True:
+                            tor_used_time = tor_used_time + 1
+                            if tor_used_time > TOR_REFRESH_TIME:
+                                controller.signal(Signal.NEWNYM)
+                                tor_used_time = 0
                         try:
                             stockdf = appendstockcsv(code, jsm.DAILY, start_date, end_date, stockdf)
                             stockdf = stockdf.ix[:,['Date','Open','High','Low','Close','Volume', 'AdjClose']]
@@ -129,10 +130,16 @@ if _type == '1':
             # 中途半端にデータを取得してしまっている場合
             else:
                 # 関数実行日が土日祝の場合、最近の土日祝以外の日にする
-                start_date = datetime.date(1990,1,1)
+                start_date = datetime.date(1990, 1, 1)
                 end_date = datetime.date.today()
                 while is_holiday(end_date):
                     end_date = end_date - datetime.timedelta(days=1)
+                # change ip address if tor refresh time has come
+                if USE_TOR == True:
+                    tor_used_time = tor_used_time + 1
+                    if tor_used_time > TOR_REFRESH_TIME:
+                        controller.signal(Signal.NEWNYM)
+                        tor_used_time = 0
                 try:
                     stockdf = getstockcsv(code, jsm.DAILY, start_date, end_date)
                     stockdf = stockdf.ix[:,['Date','Open','High','Low','Close','Volume', 'AdjClose']]

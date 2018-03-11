@@ -6,13 +6,14 @@ services:
       dockerfile: Dockerfile
     volumes:
       - ./data:/data
-      - ./main.py:/main.py
+      - ./main.py:/usr/src/app/main.py
     environment:
-      SAVE_PATH: /data
-      TIME_TYPE: '1'
-      TOR_PASSWORD: 'tor'
-      USE_TOR: 'True'
-      TOR_REFRESH_TIME: 3
+      - SAVE_PATH=/data
+      - TIME_TYPE=1
+      - TOR_PASSWORD=tor
+      - USE_TOR=True
+      - TOR_REFRESH_TIME=3
+      - TZ=Asia/Tokyo
     deploy:
       restart_policy:
         delay: 10s
@@ -22,9 +23,13 @@ services:
       - -timeout
       - 60s
       - -wait
-      - tcp://tor_proxy:9051
-    command: python -B -u ./main.py
+      - tcp://tor_proxy:9050
+    command: python -B -u /usr/src/app/main.py
   tor_proxy:
     image: dperson/torproxy
+    ports:
+      - 8118:8118
+      - 9050:9050
     environment:
-      PASSWORD: "tor"
+      - PASSWORD=tor
+      - TZ=Asia/Tokyo
